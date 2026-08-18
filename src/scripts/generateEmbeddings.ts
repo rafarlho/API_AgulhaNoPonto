@@ -17,15 +17,11 @@ async function main() {
 
     for (const product of products) {
         const text = `${product.name}. ${product.description || ''}. ${product.price}€. Pode Categorias: ${products.categories}.`
-        console.log(`Generating embedding for: ${product.name}`)
-
         const embedding = await getEmbeddings(text)
-        console.log(embedding)
         await pool.query(
             `Update product set embedding = $1 where id = $2`,[`[${embedding.join(',')}]`, product.id]
         )
     }
-    console.log("Successfuly generated embeddings")
     await pool.end();
 
 }
