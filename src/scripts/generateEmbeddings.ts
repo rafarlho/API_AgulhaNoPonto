@@ -1,17 +1,10 @@
+import { getEmbeddings } from "../services/embeddingService"
+
 require("dotenv").config()
-const { Pool } = require("../node_modules/@types/pg")
+const { Pool } = require("../../node_modules/@types/pg")
 
 const pool = new Pool({connectionString: process.env.DATABASE_URL})
 
-async function getEmbeddings(text) {
-    const res = await fetch(`${process.env.OLLAMA_URL}/api/embeddings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json'},
-        body: JSON.stringify({model: 'nomic-embed-text', prompt: text })
-    })
-    const data = await res.json();
-    return data.embedding
-}
 
 async function main() {
     const {rows: products} = await pool.query(`
@@ -24,15 +17,11 @@ async function main() {
 
     for (const product of products) {
         const text = `${product.name}. ${product.description || ''}. ${product.price}€. Pode Categorias: ${products.categories}.`
-        console.log(`Generating embedding for: ${product.name}`)
-
         const embedding = await getEmbeddings(text)
-        console.log(embedding)
         await pool.query(
             `Update product set embedding = $1 where id = $2`,[`[${embedding.join(',')}]`, product.id]
         )
     }
-    console.log("Successfuly generated embeddings")
     await pool.end();
 
 }
